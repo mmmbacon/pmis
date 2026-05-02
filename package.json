@@ -7,6 +7,9 @@
   "engines": {
     "node": ">=22"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": ["bcrypt", "@nestjs/core"]
+  },
   "scripts": {
     "db:up": "docker compose up -d db",
     "dev": "pnpm db:up && pnpm --filter api migration:run && pnpm --filter api seed && pnpm -r --parallel --filter api --filter web dev",

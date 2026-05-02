@@ -1,0 +1,15 @@
+.git
+.github
+apps/web/node_modules
+apps/api/node_modules
+**/dist
+node_modules
+coverage
+**/*.spec.ts
+**/*.e2e-spec.ts
+apps/web/cypress
+**/.env
+**/.env.*
+!**/.env.example
+*.md
+.plan
