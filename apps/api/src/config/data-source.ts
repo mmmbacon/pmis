@@ -11,11 +11,15 @@ import { env } from './env';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
-  host: env.database.host,
-  port: env.database.port,
-  username: env.database.user,
-  password: env.database.password,
-  database: env.database.name,
+  ...(env.databaseUrl
+    ? { url: env.databaseUrl }
+    : {
+        host: env.database.host,
+        port: env.database.port,
+        username: env.database.user,
+        password: env.database.password,
+        database: env.database.name,
+      }),
   synchronize: false,
   logging: env.nodeEnv === 'development' ? ['error', 'warn'] : ['error'],
   entities: [AuditEvent, Project, Task, TimesheetEntry, Timesheet, Role, User],

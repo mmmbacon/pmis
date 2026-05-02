@@ -1,7 +1,9 @@
 import { config } from 'dotenv';
 
 config({ path: process.env.NODE_ENV === 'test' ? '.env.test' : '.env' });
-config({ path: '.env.example' });
+if (process.env.NODE_ENV !== 'production') {
+  config({ path: '.env.example' });
+}
 
 const required = (key: string, fallback?: string): string => {
   const value = process.env[key] ?? fallback;
@@ -16,9 +18,16 @@ const numberValue = (key: string, fallback: number): number => {
   return value ? Number(value) : fallback;
 };
 
+/** Set by Fly Postgres (`fly postgres attach`) and many hosts; overrides discrete DATABASE_* when present. */
+const databaseUrl = process.env.DATABASE_URL?.trim();
+
+const defaultPort =
+  process.env.NODE_ENV === 'production' ? 8080 : 3000;
+
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
-  port: numberValue('PORT', 3000),
+  port: numberValue('PORT', defaultPort),
+  databaseUrl: databaseUrl || undefined,
   database: {
     host: required('DATABASE_HOST', '127.0.0.1'),
     port: numberValue('DATABASE_PORT', 5433),

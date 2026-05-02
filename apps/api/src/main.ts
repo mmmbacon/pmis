@@ -17,7 +17,8 @@ async function bootstrap(): Promise<void> {
       forbidNonWhitelisted: true,
     }),
   );
-  await app.listen(env.port);
+  const host = '0.0.0.0';
+  await app.listen(env.port, host);
 }
 
 void bootstrap();
