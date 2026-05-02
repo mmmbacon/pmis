@@ -1,5 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
-import { assertCanDecide, assertCanRequestCorrection, assertCanSubmit, isEditableStatus } from './timesheet-policy';
+import {
+  assertCanDecide,
+  assertCanRequestCorrection,
+  assertCanSubmit,
+  isEditableStatus,
+} from './timesheet-policy';
 import { TimesheetStatus } from './timesheet-status';
 
 describe('timesheet policy', () => {
@@ -23,6 +28,8 @@ describe('timesheet policy', () => {
 
   it('allows correction requests only on approved timesheets', () => {
     expect(() => assertCanRequestCorrection(TimesheetStatus.Approved)).not.toThrow();
-    expect(() => assertCanRequestCorrection(TimesheetStatus.Submitted)).toThrow(BadRequestException);
+    expect(() => assertCanRequestCorrection(TimesheetStatus.Submitted)).toThrow(
+      BadRequestException,
+    );
   });
 });

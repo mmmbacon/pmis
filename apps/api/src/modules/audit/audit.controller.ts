@@ -12,7 +12,10 @@ export class AuditController {
 
   @Get(':entityType/:entityId')
   @Roles('approver', 'admin')
-  findForEntity(@Param('entityType') entityType: string, @Param('entityId') entityId: string): Promise<AuditEvent[]> {
+  findForEntity(
+    @Param('entityType') entityType: string,
+    @Param('entityId') entityId: string,
+  ): Promise<AuditEvent[]> {
     return this.auditService.findForEntity(entityType, entityId);
   }
 }

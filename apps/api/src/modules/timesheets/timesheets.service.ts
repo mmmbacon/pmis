@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import { AuthenticatedUser, hasRole } from '../../common/authenticated-user';
@@ -6,7 +11,12 @@ import { AuditService } from '../audit/audit.service';
 import { Task } from '../tasks/task.entity';
 import { UpsertTimesheetDto } from './dto/upsert-timesheet.dto';
 import { TimesheetEntry } from './timesheet-entry.entity';
-import { assertCanDecide, assertCanRequestCorrection, assertCanSubmit, isEditableStatus } from './timesheet-policy';
+import {
+  assertCanDecide,
+  assertCanRequestCorrection,
+  assertCanSubmit,
+  isEditableStatus,
+} from './timesheet-policy';
 import { TimesheetStatus } from './timesheet-status';
 import { Timesheet } from './timesheet.entity';
 
@@ -131,7 +141,13 @@ export class TimesheetsService {
       throw new ForbiddenException('You cannot request correction for this timesheet');
     }
     assertCanRequestCorrection(timesheet.status);
-    return this.transition(id, actor, TimesheetStatus.Rejected, 'timesheet.correction_requested', note);
+    return this.transition(
+      id,
+      actor,
+      TimesheetStatus.Rejected,
+      'timesheet.correction_requested',
+      note,
+    );
   }
 
   async listSubmitted(actor: AuthenticatedUser): Promise<Timesheet[]> {

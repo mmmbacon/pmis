@@ -28,7 +28,12 @@ export class Timesheet {
   @Column({ name: 'period_end', type: 'date' })
   periodEnd!: string;
 
-  @Column({ type: 'enum', enum: TimesheetStatus, enumName: 'timesheet_status', default: TimesheetStatus.Draft })
+  @Column({
+    type: 'enum',
+    enum: TimesheetStatus,
+    enumName: 'timesheet_status',
+    default: TimesheetStatus.Draft,
+  })
   status!: TimesheetStatus;
 
   @Column({ name: 'submitted_at', type: 'timestamptz', nullable: true })

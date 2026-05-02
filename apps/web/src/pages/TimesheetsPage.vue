@@ -9,7 +9,9 @@ import type { TimesheetEntryInput } from '../types/api';
 const projects = useProjectStore();
 const timesheets = useTimesheetStore();
 const periodStart = startOfWeek();
-const editable = computed(() => !timesheets.current || ['draft', 'rejected'].includes(timesheets.current.status));
+const editable = computed(
+  () => !timesheets.current || ['draft', 'rejected'].includes(timesheets.current.status),
+);
 
 onMounted(async () => {
   await Promise.all([projects.load(), timesheets.loadMine()]);
@@ -59,7 +61,11 @@ const submit = async (): Promise<void> => {
     <div class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
       <h2 class="mb-3 text-lg font-semibold">Recent Timesheets</h2>
       <div class="space-y-2">
-        <div v-for="timesheet in timesheets.timesheets" :key="timesheet.id" class="flex items-center justify-between rounded-xl bg-slate-950 p-3">
+        <div
+          v-for="timesheet in timesheets.timesheets"
+          :key="timesheet.id"
+          class="flex items-center justify-between rounded-xl bg-slate-950 p-3"
+        >
           <span>{{ timesheet.periodStart }} - {{ timesheet.periodEnd }}</span>
           <StatusBadge :status="timesheet.status" />
         </div>

@@ -39,7 +39,9 @@ watchEffect(() => {
     draft[task.id] = {
       taskId: task.id,
       note: existing?.note ?? '',
-      hoursByDate: Object.fromEntries(days.value.map((day) => [day.date, existing?.hoursByDate[day.date] ?? 0])),
+      hoursByDate: Object.fromEntries(
+        days.value.map((day) => [day.date, existing?.hoursByDate[day.date] ?? 0]),
+      ),
     };
   }
 
@@ -70,7 +72,9 @@ const rows = computed<TaskDraftRow[]>(() =>
 
 const totalHours = computed(() =>
   Object.values(draft).reduce(
-    (sum, row) => sum + Object.values(row.hoursByDate).reduce((rowSum, hours) => rowSum + Number(hours || 0), 0),
+    (sum, row) =>
+      sum +
+      Object.values(row.hoursByDate).reduce((rowSum, hours) => rowSum + Number(hours || 0), 0),
     0,
   ),
 );
@@ -118,7 +122,11 @@ const save = (): void => {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="row in rows" :key="row.task.id" class="border-t border-slate-800 bg-slate-950/60">
+          <tr
+            v-for="row in rows"
+            :key="row.task.id"
+            class="border-t border-slate-800 bg-slate-950/60"
+          >
             <td class="w-48 p-3">
               <p class="font-medium text-slate-100">
                 {{ row.task.project?.code ?? 'Project' }} / {{ row.task.code }}
@@ -139,7 +147,12 @@ const save = (): void => {
               />
             </td>
             <td class="w-40 p-3">
-              <input v-model="row.draft.note" class="w-full" :disabled="!editable" placeholder="Note" />
+              <input
+                v-model="row.draft.note"
+                class="w-full"
+                :disabled="!editable"
+                placeholder="Note"
+              />
             </td>
           </tr>
         </tbody>
@@ -147,7 +160,13 @@ const save = (): void => {
     </div>
 
     <div class="mt-5 flex justify-end">
-      <button v-if="editable" class="bg-cyan-500 text-slate-950 hover:bg-cyan-400" data-cy="save-timesheet" type="button" @click="save">
+      <button
+        v-if="editable"
+        class="bg-cyan-500 text-slate-950 hover:bg-cyan-400"
+        data-cy="save-timesheet"
+        type="button"
+        @click="save"
+      >
         Save draft
       </button>
       <p v-else class="text-sm text-slate-400">This timesheet is locked from editing.</p>

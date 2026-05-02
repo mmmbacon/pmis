@@ -3,8 +3,12 @@ import { computed, onMounted } from 'vue';
 import { useTimesheetStore } from '../stores/timesheets';
 
 const timesheets = useTimesheetStore();
-const totalAmount = computed(() => timesheets.summaries.reduce((sum, row) => sum + row.billableAmount, 0));
-const totalHours = computed(() => timesheets.summaries.reduce((sum, row) => sum + row.totalHours, 0));
+const totalAmount = computed(() =>
+  timesheets.summaries.reduce((sum, row) => sum + row.billableAmount, 0),
+);
+const totalHours = computed(() =>
+  timesheets.summaries.reduce((sum, row) => sum + row.totalHours, 0),
+);
 
 onMounted(() => {
   void timesheets.loadSummaries();
@@ -41,7 +45,12 @@ onMounted(() => {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="summary in timesheets.summaries" :key="summary.projectId" class="border-t border-slate-800" data-cy="report-row">
+          <tr
+            v-for="summary in timesheets.summaries"
+            :key="summary.projectId"
+            class="border-t border-slate-800"
+            data-cy="report-row"
+          >
             <td class="p-3">{{ summary.projectCode }} - {{ summary.projectName }}</td>
             <td class="p-3">{{ summary.billable ? 'Yes' : 'No' }}</td>
             <td class="p-3">{{ summary.totalHours.toFixed(2) }}</td>

@@ -5,7 +5,9 @@ export class CreateCoreSchema20260501120000 implements MigrationInterface {
 
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`);
-    await queryRunner.query(`CREATE TYPE timesheet_status AS ENUM ('draft', 'submitted', 'approved', 'rejected')`);
+    await queryRunner.query(
+      `CREATE TYPE timesheet_status AS ENUM ('draft', 'submitted', 'approved', 'rejected')`,
+    );
 
     await queryRunner.query(`
       CREATE TABLE roles (
@@ -86,7 +88,9 @@ export class CreateCoreSchema20260501120000 implements MigrationInterface {
         CONSTRAINT chk_timesheets_period CHECK (period_end >= period_start)
       )
     `);
-    await queryRunner.query(`CREATE INDEX idx_timesheets_user_period ON timesheets(user_id, period_start)`);
+    await queryRunner.query(
+      `CREATE INDEX idx_timesheets_user_period ON timesheets(user_id, period_start)`,
+    );
     await queryRunner.query(`CREATE INDEX idx_timesheets_status ON timesheets(status)`);
     await queryRunner.query(`CREATE INDEX idx_timesheets_decided_by ON timesheets(decided_by)`);
 
@@ -104,9 +108,15 @@ export class CreateCoreSchema20260501120000 implements MigrationInterface {
         CONSTRAINT uq_timesheet_entries_day_task UNIQUE (timesheet_id, work_date, task_id)
       )
     `);
-    await queryRunner.query(`CREATE INDEX idx_timesheet_entries_timesheet_id ON timesheet_entries(timesheet_id)`);
-    await queryRunner.query(`CREATE INDEX idx_timesheet_entries_task_id ON timesheet_entries(task_id)`);
-    await queryRunner.query(`CREATE INDEX idx_timesheet_entries_work_date ON timesheet_entries(work_date)`);
+    await queryRunner.query(
+      `CREATE INDEX idx_timesheet_entries_timesheet_id ON timesheet_entries(timesheet_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX idx_timesheet_entries_task_id ON timesheet_entries(task_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX idx_timesheet_entries_work_date ON timesheet_entries(work_date)`,
+    );
 
     await queryRunner.query(`
       CREATE TABLE audit_events (
@@ -121,7 +131,9 @@ export class CreateCoreSchema20260501120000 implements MigrationInterface {
       )
     `);
     await queryRunner.query(`CREATE INDEX idx_audit_events_actor_id ON audit_events(actor_id)`);
-    await queryRunner.query(`CREATE INDEX idx_audit_events_entity ON audit_events(entity_type, entity_id)`);
+    await queryRunner.query(
+      `CREATE INDEX idx_audit_events_entity ON audit_events(entity_type, entity_id)`,
+    );
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {

@@ -1,4 +1,12 @@
-import type { AuthResponse, Project, ProjectSummary, Task, Timesheet, TimesheetInput, User } from '../types/api';
+import type {
+  AuthResponse,
+  Project,
+  ProjectSummary,
+  Task,
+  Timesheet,
+  TimesheetInput,
+  User,
+} from '../types/api';
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ??
@@ -36,17 +44,28 @@ const request = async <T>(path: string, options: RequestInit = {}, retry = true)
   }
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => ({ message: response.statusText }))) as { message?: string };
-    throw new Error(Array.isArray(body.message) ? body.message.join(', ') : body.message ?? response.statusText);
+    const body = (await response.json().catch(() => ({ message: response.statusText }))) as {
+      message?: string;
+    };
+    throw new Error(
+      Array.isArray(body.message) ? body.message.join(', ') : (body.message ?? response.statusText),
+    );
   }
   return (await response.json()) as T;
 };
 
 export const authApi = {
   login: (email: string, password: string): Promise<AuthResponse> =>
-    request<AuthResponse>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+    request<AuthResponse>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    }),
   refresh: (refreshToken: string): Promise<AuthResponse> =>
-    request<AuthResponse>('/auth/refresh', { method: 'POST', body: JSON.stringify({ refreshToken }) }, false),
+    request<AuthResponse>(
+      '/auth/refresh',
+      { method: 'POST', body: JSON.stringify({ refreshToken }) },
+      false,
+    ),
   logout: (): Promise<{ ok: true }> => request<{ ok: true }>('/auth/logout', { method: 'POST' }),
   me: (): Promise<User> => request<User>('/users/me'),
 };
@@ -64,15 +83,22 @@ export const timesheetsApi = {
   get: (id: string): Promise<Timesheet> => request<Timesheet>(`/timesheets/${id}`),
   save: (input: TimesheetInput): Promise<Timesheet> =>
     request<Timesheet>('/timesheets', { method: 'POST', body: JSON.stringify(input) }),
-  submit: (id: string): Promise<Timesheet> => request<Timesheet>(`/timesheets/${id}/submit`, { method: 'POST' }),
+  submit: (id: string): Promise<Timesheet> =>
+    request<Timesheet>(`/timesheets/${id}/submit`, { method: 'POST' }),
 };
 
 export const approvalsApi = {
   list: (): Promise<Timesheet[]> => request<Timesheet[]>('/approvals'),
   approve: (id: string, note?: string): Promise<Timesheet> =>
-    request<Timesheet>(`/approvals/${id}/approve`, { method: 'POST', body: JSON.stringify({ note }) }),
+    request<Timesheet>(`/approvals/${id}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({ note }),
+    }),
   reject: (id: string, note?: string): Promise<Timesheet> =>
-    request<Timesheet>(`/approvals/${id}/reject`, { method: 'POST', body: JSON.stringify({ note }) }),
+    request<Timesheet>(`/approvals/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ note }),
+    }),
 };
 
 export const reportingApi = {

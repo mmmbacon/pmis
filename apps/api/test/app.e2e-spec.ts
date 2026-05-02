@@ -1,4 +1,4 @@
-import type { INestApplication} from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
@@ -21,7 +21,9 @@ describe('Timesheet flow (integration)', () => {
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api/v1');
     app.useGlobalFilters(new HttpExceptionFilter());
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
+    );
     await app.init();
 
     dataSource = app.get(DataSource);
@@ -97,15 +99,41 @@ describe('Timesheet flow (integration)', () => {
     const users = dataSource.getRepository(User);
     const projects = dataSource.getRepository(Project);
     const tasks = dataSource.getRepository(Task);
-    const employeeRole = await roles.save(roles.create({ name: 'employee', description: 'Employee' }));
-    const approverRole = await roles.save(roles.create({ name: 'approver', description: 'Approver' }));
+    const employeeRole = await roles.save(
+      roles.create({ name: 'employee', description: 'Employee' }),
+    );
+    const approverRole = await roles.save(
+      roles.create({ name: 'approver', description: 'Approver' }),
+    );
     await roles.save(roles.create({ name: 'admin', description: 'Admin' }));
     const passwordHash = await bcrypt.hash('password123', 4);
-    await users.save(users.create({ email: 'employee@example.com', name: 'Employee', passwordHash, roles: [employeeRole] }));
-    await users.save(users.create({ email: 'approver@example.com', name: 'Approver', passwordHash, roles: [approverRole] }));
-    const project = await projects.save(
-      projects.create({ code: 'PMIS', name: 'PMIS', description: 'Demo', billable: true, hourlyRate: '150.00' }),
+    await users.save(
+      users.create({
+        email: 'employee@example.com',
+        name: 'Employee',
+        passwordHash,
+        roles: [employeeRole],
+      }),
     );
-    task = await tasks.save(tasks.create({ projectId: project.id, code: 'ENG', name: 'Engineering' }));
+    await users.save(
+      users.create({
+        email: 'approver@example.com',
+        name: 'Approver',
+        passwordHash,
+        roles: [approverRole],
+      }),
+    );
+    const project = await projects.save(
+      projects.create({
+        code: 'PMIS',
+        name: 'PMIS',
+        description: 'Demo',
+        billable: true,
+        hourlyRate: '150.00',
+      }),
+    );
+    task = await tasks.save(
+      tasks.create({ projectId: project.id, code: 'ENG', name: 'Engineering' }),
+    );
   }
 });

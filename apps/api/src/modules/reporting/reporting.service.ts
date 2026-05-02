@@ -25,7 +25,9 @@ interface ProjectSummaryRow {
 
 @Injectable()
 export class ReportingService {
-  constructor(@InjectRepository(TimesheetEntry) private readonly entries: Repository<TimesheetEntry>) {}
+  constructor(
+    @InjectRepository(TimesheetEntry) private readonly entries: Repository<TimesheetEntry>,
+  ) {}
 
   async projectSummary(start?: string, end?: string): Promise<ProjectSummary[]> {
     const query = this.entries
@@ -40,7 +42,7 @@ export class ReportingService {
       .addSelect('project.hourly_rate', 'hourlyRate')
       .addSelect('COALESCE(SUM(entry.hours), 0)', 'totalHours')
       .addSelect(
-        "CASE WHEN project.billable THEN COALESCE(SUM(entry.hours * project.hourly_rate), 0) ELSE 0 END",
+        'CASE WHEN project.billable THEN COALESCE(SUM(entry.hours * project.hourly_rate), 0) ELSE 0 END',
         'billableAmount',
       )
       .where("timesheet.status IN ('submitted', 'approved')")

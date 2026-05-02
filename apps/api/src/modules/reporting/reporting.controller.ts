@@ -8,7 +8,10 @@ export class ReportingController {
   constructor(private readonly reportingService: ReportingService) {}
 
   @Get('projects')
-  projectSummary(@Query('start') start?: string, @Query('end') end?: string): Promise<ProjectSummary[]> {
+  projectSummary(
+    @Query('start') start?: string,
+    @Query('end') end?: string,
+  ): Promise<ProjectSummary[]> {
     return this.reportingService.projectSummary(start, end);
   }
 }

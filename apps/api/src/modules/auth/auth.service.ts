@@ -53,10 +53,13 @@ export class AuthService {
       expiresIn: env.jwt.accessExpiresIn,
     });
     const refreshTokenId = randomBytes(16).toString('hex');
-    const refreshToken = await this.jwtService.signAsync({ sub: user.id, jti: refreshTokenId }, {
-      secret: env.jwt.refreshSecret,
-      expiresIn: env.jwt.refreshExpiresIn,
-    });
+    const refreshToken = await this.jwtService.signAsync(
+      { sub: user.id, jti: refreshTokenId },
+      {
+        secret: env.jwt.refreshSecret,
+        expiresIn: env.jwt.refreshExpiresIn,
+      },
+    );
     await this.usersService.saveRefreshTokenHash(user.id, await bcrypt.hash(refreshToken, 12));
     return { accessToken, refreshToken };
   }

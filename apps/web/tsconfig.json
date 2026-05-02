@@ -10,5 +10,11 @@
     "noEmit": true,
     "types": ["vite/client", "vitest/globals", "cypress"]
   },
-  "include": ["src/**/*.ts", "src/**/*.vue", "vite.config.ts", "cypress.config.ts", "cypress/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "vite.config.ts",
+    "cypress.config.ts",
+    "cypress/**/*.ts"
+  ]
 }

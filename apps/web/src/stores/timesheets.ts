@@ -56,7 +56,10 @@ export const useTimesheetStore = defineStore('timesheets', () => {
     }
   };
 
-  const saveDraft = async (entries: TimesheetEntryInput[], periodStart = startOfWeek()): Promise<Timesheet> => {
+  const saveDraft = async (
+    entries: TimesheetEntryInput[],
+    periodStart = startOfWeek(),
+  ): Promise<Timesheet> => {
     error.value = null;
     const input: TimesheetInput = { periodStart, periodEnd: endOfWeek(periodStart), entries };
     const saved = await timesheetsApi.save(input);

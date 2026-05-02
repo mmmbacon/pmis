@@ -34,7 +34,11 @@ const selectTheme = (themeId: ThemeId): void => {
               <span class="block text-lg font-semibold">{{ option.name }}</span>
               <span class="mt-1 block text-sm opacity-80">{{ option.description }}</span>
             </span>
-            <span v-if="theme.selectedTheme === option.id" class="rounded-full px-3 py-1 text-xs font-semibold">Selected</span>
+            <span
+              v-if="theme.selectedTheme === option.id"
+              class="rounded-full px-3 py-1 text-xs font-semibold"
+              >Selected</span
+            >
           </span>
           <span class="mt-4 grid grid-cols-4 gap-2">
             <span class="season-swatch season-swatch-background"></span>

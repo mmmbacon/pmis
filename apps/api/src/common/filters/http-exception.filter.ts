@@ -29,8 +29,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
                 ? (rawResponse as { message: string | string[] }).message
                 : 'Request failed',
             error:
-              'error' in rawResponse ? String((rawResponse as { error: string }).error) : statusText,
-            details: 'details' in rawResponse ? (rawResponse).details : undefined,
+              'error' in rawResponse
+                ? String((rawResponse as { error: string }).error)
+                : statusText,
+            details: 'details' in rawResponse ? rawResponse.details : undefined,
           }
         : {
             statusCode: status,

@@ -8,7 +8,9 @@ export const useProjectStore = defineStore('projects', () => {
   const loading = ref(false);
 
   const tasks = computed<Task[]>(() =>
-    projects.value.flatMap((project) => (project.tasks ?? []).map((task) => ({ ...task, project }))),
+    projects.value.flatMap((project) =>
+      (project.tasks ?? []).map((task) => ({ ...task, project })),
+    ),
   );
 
   const load = async (): Promise<void> => {

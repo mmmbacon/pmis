@@ -38,7 +38,10 @@ export class TimesheetEntry {
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt!: Date;
 
-  @ManyToOne(() => Timesheet, (timesheet) => timesheet.entries, { nullable: false, onDelete: 'CASCADE' })
+  @ManyToOne(() => Timesheet, (timesheet) => timesheet.entries, {
+    nullable: false,
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'timesheet_id' })
   timesheet!: Timesheet;
 

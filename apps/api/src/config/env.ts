@@ -21,8 +21,7 @@ const numberValue = (key: string, fallback: number): number => {
 /** Set by Fly Postgres (`fly postgres attach`) and many hosts; overrides discrete DATABASE_* when present. */
 const databaseUrl = process.env.DATABASE_URL?.trim();
 
-const defaultPort =
-  process.env.NODE_ENV === 'production' ? 8080 : 3000;
+const defaultPort = process.env.NODE_ENV === 'production' ? 8080 : 3000;
 
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',

@@ -1,2 +1,8 @@
 packages:
   - apps/*
+
+# Allow install scripts (pnpm v10 blocks others). esbuild is required for Vite.
+onlyBuiltDependencies:
+  - bcrypt
+  - '@nestjs/core'
+  - esbuild

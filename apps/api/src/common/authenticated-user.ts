@@ -7,4 +7,5 @@ export interface AuthenticatedUser {
   roles: RoleName[];
 }
 
-export const hasRole = (user: AuthenticatedUser, role: RoleName): boolean => user.roles.includes(role);
+export const hasRole = (user: AuthenticatedUser, role: RoleName): boolean =>
+  user.roles.includes(role);

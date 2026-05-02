@@ -23,7 +23,10 @@ export class TimesheetsController {
   }
 
   @Post()
-  upsert(@Body() dto: UpsertTimesheetDto, @CurrentUser() user: AuthenticatedUser): Promise<Timesheet> {
+  upsert(
+    @Body() dto: UpsertTimesheetDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<Timesheet> {
     return this.timesheetsService.upsertDraft(user, dto);
   }
 

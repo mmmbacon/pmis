@@ -19,9 +19,11 @@ describe('approver flow', () => {
     cy.get('[data-cy=login-submit]').click();
     cy.contains('Approvals').click();
     cy.location('pathname').should('eq', '/approvals');
-    cy.get('[data-cy=approval-card]').first().within(() => {
-      cy.get('[data-cy=approve-timesheet]').click();
-    });
+    cy.get('[data-cy=approval-card]')
+      .first()
+      .within(() => {
+        cy.get('[data-cy=approve-timesheet]').click();
+      });
     cy.contains('No submitted timesheets');
   });
 });

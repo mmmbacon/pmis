@@ -39,15 +39,25 @@ const useDemo = (kind: 'employee' | 'approver'): void => {
         <span class="text-sm text-slate-300">Password</span>
         <input v-model="password" class="mt-1 w-full" data-cy="password-input" type="password" />
       </label>
-      <p v-if="auth.error" class="rounded-lg bg-rose-500/10 p-3 text-sm text-rose-200">{{ auth.error }}</p>
-      <button class="w-full bg-cyan-500 text-slate-950 hover:bg-cyan-400" data-cy="login-submit" :disabled="submitting">
+      <p v-if="auth.error" class="rounded-lg bg-rose-500/10 p-3 text-sm text-rose-200">
+        {{ auth.error }}
+      </p>
+      <button
+        class="w-full bg-cyan-500 text-slate-950 hover:bg-cyan-400"
+        data-cy="login-submit"
+        :disabled="submitting"
+      >
         {{ submitting ? 'Signing in...' : 'Sign in' }}
       </button>
     </form>
 
     <div class="mt-5 grid grid-cols-2 gap-3">
-      <button class="bg-slate-800 hover:bg-slate-700" type="button" @click="useDemo('employee')">Employee demo</button>
-      <button class="bg-slate-800 hover:bg-slate-700" type="button" @click="useDemo('approver')">Approver demo</button>
+      <button class="bg-slate-800 hover:bg-slate-700" type="button" @click="useDemo('employee')">
+        Employee demo
+      </button>
+      <button class="bg-slate-800 hover:bg-slate-700" type="button" @click="useDemo('approver')">
+        Approver demo
+      </button>
     </div>
   </section>
 </template>
