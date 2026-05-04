@@ -50,7 +50,7 @@ const submittedTimesheet = (): Timesheet => ({
 vi.mock('../api/client', () => ({
   approvalsApi: {
     approve: vi.fn(),
-    list: vi.fn(async () => [submittedTimesheet()]),
+    list: vi.fn(() => Promise.resolve([submittedTimesheet()])),
     reject: vi.fn(),
   },
   reportingApi: {
