@@ -38,10 +38,16 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm static
-      - run: pnpm test
-      - run: pnpm --filter api test:integration
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run static checks
+        run: pnpm static
+      - name: Run API unit tests
+        run: pnpm --filter api test
+      - name: Run web unit and component tests
+        run: pnpm --filter web test
+      - name: Run API integration tests
+        run: pnpm --filter api test:integration
         env:
           NODE_ENV: test
           DATABASE_HOST: localhost
