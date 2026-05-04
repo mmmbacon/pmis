@@ -63,10 +63,11 @@ The core model has eight tables: `users`, `roles`, `user_roles`, `projects`, `ta
 
 The v1 deployment target is Fly.io. The app remains a modular monolith with PostgreSQL managed outside the application container. Production migrations run as a discrete deploy step, not on app startup. Backup and restore expectations are documented in [`docs/runbooks/db-backup.md`](docs/runbooks/db-backup.md).
 
-Pull requests deploy ephemeral Fly.io review apps through `.github/workflows/fly-review.yml`. Configure these GitHub Actions settings before relying on previews:
+Pull requests create ephemeral Neon database branches through `.github/workflows/neon-workflow.yml` and deploy Fly.io review apps through `.github/workflows/fly-review.yml`. Configure these GitHub Actions settings before relying on previews:
 
-- Secret `FLY_API_TOKEN`: Fly.io organization token allowed to create apps and attach databases.
-- Variable `FLY_REVIEW_POSTGRES`: existing Fly Postgres cluster used for per-PR review databases.
+- Secret `FLY_API_TOKEN`: Fly.io organization token allowed to create and deploy review apps.
+- Secret `NEON_API_KEY` and variable `NEON_PROJECT_ID`: created by the Neon GitHub integration and used to create/delete per-PR database branches.
+- Optional variables `NEON_DATABASE_ROLE` and `NEON_DATABASE_NAME` override the Neon role and database used for review app connections. They default to `neondb_owner` and `neondb`.
 - Secrets `REVIEW_JWT_ACCESS_SECRET`, `REVIEW_JWT_REFRESH_SECRET`, and `REVIEW_ADMIN_PASSWORD`: runtime credentials for review apps.
 - Optional variables `FLY_ORG`, `FLY_REGION`, and `REVIEW_ADMIN_EMAIL` override the default Fly organization, region, and seeded admin email.
 

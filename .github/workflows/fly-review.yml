@@ -29,7 +29,8 @@ jobs:
       - name: Validate Fly review app settings
         env:
           EVENT_ACTION: ${{ github.event.action }}
-          FLY_REVIEW_POSTGRES: ${{ vars.FLY_REVIEW_POSTGRES }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
           REVIEW_ADMIN_PASSWORD: ${{ secrets.REVIEW_ADMIN_PASSWORD }}
           REVIEW_JWT_ACCESS_SECRET: ${{ secrets.REVIEW_JWT_ACCESS_SECRET }}
           REVIEW_JWT_REFRESH_SECRET: ${{ secrets.REVIEW_JWT_REFRESH_SECRET }}
@@ -44,9 +45,10 @@ jobs:
           }
 
           require FLY_API_TOKEN "Set the FLY_API_TOKEN repository secret to a Fly.io org token."
+          require NEON_API_KEY "Set the NEON_API_KEY repository secret created by the Neon GitHub integration."
+          require NEON_PROJECT_ID "Set the NEON_PROJECT_ID repository variable created by the Neon GitHub integration."
 
           if [ "$EVENT_ACTION" != "closed" ]; then
-            require FLY_REVIEW_POSTGRES "Set the FLY_REVIEW_POSTGRES repository variable to an existing Fly Postgres cluster for review apps."
             require REVIEW_ADMIN_PASSWORD "Set the REVIEW_ADMIN_PASSWORD repository secret for seeded review admin logins."
             require REVIEW_JWT_ACCESS_SECRET "Set the REVIEW_JWT_ACCESS_SECRET repository secret."
             require REVIEW_JWT_REFRESH_SECRET "Set the REVIEW_JWT_REFRESH_SECRET repository secret."
@@ -57,15 +59,35 @@ jobs:
       - name: Get code
         uses: actions/checkout@v4
 
+      - name: Get branch name
+        id: branch_name
+        uses: tj-actions/branch-names@v8
+
+      - name: Get branch expiration date
+        if: github.event.action != 'closed'
+        run: echo "EXPIRES_AT=$(date -u --date '+14 days' +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
+
+      - name: Create Neon branch
+        id: create_neon_branch
+        if: github.event.action != 'closed'
+        uses: neondatabase/create-branch-action@v6
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch_name: preview/pr-${{ github.event.number }}-${{ steps.branch_name.outputs.current_branch }}
+          role: ${{ vars.NEON_DATABASE_ROLE || 'neondb_owner' }}
+          database: ${{ vars.NEON_DATABASE_NAME || 'neondb' }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+          expires_at: ${{ env.EXPIRES_AT }}
+
       - name: Deploy PR app to Fly.io
         id: deploy
         uses: superfly/fly-pr-review-apps@1.5.0
         with:
           name: pmis-pr-${{ github.event.number }}
           config: fly.review.toml
-          postgres: ${{ vars.FLY_REVIEW_POSTGRES }}
           memory: 512
           secrets: >-
+            DATABASE_URL=${{ steps.create_neon_branch.outputs.db_url_pooled }}
             ADMIN_EMAIL=${{ vars.REVIEW_ADMIN_EMAIL || 'admin@example.com' }}
             ADMIN_PASSWORD=${{ secrets.REVIEW_ADMIN_PASSWORD }}
             JWT_ACCESS_SECRET=${{ secrets.REVIEW_JWT_ACCESS_SECRET }}
