@@ -30,6 +30,50 @@ const queueForWeek = computed(() =>
   timesheets.approvals.filter((ts) => ts.periodStart === selectedWeekStart.value),
 );
 
+interface ActiveApprovalNote {
+  id: string;
+  text: string;
+  top: number;
+  right: number;
+}
+
+const activeNote = ref<ActiveApprovalNote | null>(null);
+
+const activeNoteStyle = computed(() => {
+  if (!activeNote.value) {
+    return {};
+  }
+
+  return {
+    top: `${activeNote.value.top}px`,
+    right: `${activeNote.value.right}px`,
+  };
+});
+
+const approvalNoteId = (timesheetId: string, taskId: string): string =>
+  `approval-note-${timesheetId}-${taskId}`;
+
+const showNote = (event: MouseEvent | FocusEvent, id: string, text: string): void => {
+  const trigger = event.currentTarget;
+  if (!(trigger instanceof HTMLElement)) {
+    return;
+  }
+
+  const rect = trigger.getBoundingClientRect();
+  activeNote.value = {
+    id,
+    text,
+    top: rect.bottom + 6,
+    right: Math.max(16, window.innerWidth - rect.right),
+  };
+};
+
+const hideNote = (id: string): void => {
+  if (activeNote.value?.id === id) {
+    activeNote.value = null;
+  }
+};
+
 interface ApprovalTaskRow {
   taskId: string;
   taskLabel: string;
@@ -187,12 +231,17 @@ onMounted(() => {
                 {{ row.hoursByDate[day.date] ?? '—' }}
               </td>
               <td class="w-12 p-2 text-center align-middle">
-                <span v-if="row.note" class="group relative inline-flex justify-center">
+                <span v-if="row.note" class="inline-flex justify-center">
                   <button
                     class="rounded-md p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/80"
                     type="button"
-                    :aria-describedby="`approval-note-${timesheet.id}-${row.taskId}`"
-                    aria-label="Entry note"
+                    :aria-describedby="approvalNoteId(timesheet.id, row.taskId)"
+                    :aria-label="`Entry note: ${row.note}`"
+                    data-cy="approval-note-trigger"
+                    @blur="hideNote(approvalNoteId(timesheet.id, row.taskId))"
+                    @focus="showNote($event, approvalNoteId(timesheet.id, row.taskId), row.note)"
+                    @mouseenter="showNote($event, approvalNoteId(timesheet.id, row.taskId), row.note)"
+                    @mouseleave="hideNote(approvalNoteId(timesheet.id, row.taskId))"
                   >
                     <svg
                       class="h-5 w-5"
@@ -211,13 +260,6 @@ onMounted(() => {
                     </svg>
                   </button>
                   <span :id="`approval-note-${timesheet.id}-${row.taskId}`" class="sr-only">
-                    {{ row.note }}
-                  </span>
-                  <span
-                    class="pointer-events-none absolute left-1/2 top-full z-20 mt-1.5 w-max max-w-xs -translate-x-1/2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-left text-xs leading-snug text-slate-200 opacity-0 shadow-lg ring-1 ring-black/20 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
-                    role="tooltip"
-                    aria-hidden="true"
-                  >
                     {{ row.note }}
                   </span>
                 </span>
@@ -246,4 +288,17 @@ onMounted(() => {
       </div>
     </article>
   </section>
+
+  <Teleport to="body">
+    <span
+      v-if="activeNote"
+      class="pointer-events-none fixed z-50 w-max max-w-xs rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-left text-xs leading-snug text-slate-200 opacity-100 shadow-lg ring-1 ring-black/20"
+      :style="activeNoteStyle"
+      role="tooltip"
+      aria-hidden="true"
+      data-cy="approval-note-tooltip"
+    >
+      {{ activeNote.text }}
+    </span>
+  </Teleport>
 </template>
