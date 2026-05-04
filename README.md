@@ -2,6 +2,8 @@
 
 A small, production-minded timesheet manager built as a modular monolith. Employees submit weekly time against project tasks, approvers approve or reject submitted weeks, approved periods are locked, and every state change is audit logged.
 
+Production deployment: [`https://pmis-rippling-darkness-7518.fly.dev`](https://pmis-rippling-darkness-7518.fly.dev)
+
 ## Architecture
 
 ```mermaid
