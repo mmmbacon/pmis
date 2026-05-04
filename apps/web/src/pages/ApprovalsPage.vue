@@ -7,6 +7,13 @@ import type { Timesheet } from '../types/api';
 const timesheets = useTimesheetStore();
 
 const selectedWeekStart = ref(startOfWeek());
+const activeNote = ref<{
+  id: string;
+  text: string;
+  left: number;
+  top: number;
+  placement: 'above' | 'below';
+} | null>(null);
 
 const addDays = (iso: string, delta: number): string => {
   const d = new Date(`${iso}T00:00:00Z`);
@@ -62,6 +69,35 @@ const buildRows = (ts: Timesheet): ApprovalTaskRow[] => {
 
 const totalHours = (ts: Timesheet): number =>
   ts.entries.reduce((sum, entry) => sum + Number(entry.hours), 0);
+
+const showNote = (event: MouseEvent | FocusEvent, id: string, text: string): void => {
+  const button = event.currentTarget as HTMLElement | null;
+  if (!button) {
+    return;
+  }
+
+  const rect = button.getBoundingClientRect();
+  const maxTooltipWidth = Math.max(0, Math.min(320, window.innerWidth - 32));
+  const halfTooltipWidth = maxTooltipWidth / 2;
+  const center = rect.left + rect.width / 2;
+  const minLeft = 16 + halfTooltipWidth;
+  const maxLeft = window.innerWidth - 16 - halfTooltipWidth;
+  const placement = rect.top > window.innerHeight / 2 ? 'above' : 'below';
+
+  activeNote.value = {
+    id,
+    text,
+    left: Math.min(Math.max(center, minLeft), maxLeft),
+    top: placement === 'above' ? rect.top - 6 : rect.bottom + 6,
+    placement,
+  };
+};
+
+const hideNote = (id: string): void => {
+  if (activeNote.value?.id === id) {
+    activeNote.value = null;
+  }
+};
 
 onMounted(() => {
   void timesheets.loadApprovals();
@@ -193,6 +229,15 @@ onMounted(() => {
                     type="button"
                     :aria-describedby="`approval-note-${timesheet.id}-${row.taskId}`"
                     aria-label="Entry note"
+                    @blur="hideNote(`approval-note-${timesheet.id}-${row.taskId}`)"
+                    @focus="
+                      showNote($event, `approval-note-${timesheet.id}-${row.taskId}`, row.note)
+                    "
+                    @keydown.esc="hideNote(`approval-note-${timesheet.id}-${row.taskId}`)"
+                    @mouseenter="
+                      showNote($event, `approval-note-${timesheet.id}-${row.taskId}`, row.note)
+                    "
+                    @mouseleave="hideNote(`approval-note-${timesheet.id}-${row.taskId}`)"
                   >
                     <svg
                       class="h-5 w-5"
@@ -211,13 +256,6 @@ onMounted(() => {
                     </svg>
                   </button>
                   <span :id="`approval-note-${timesheet.id}-${row.taskId}`" class="sr-only">
-                    {{ row.note }}
-                  </span>
-                  <span
-                    class="pointer-events-none absolute left-1/2 top-full z-20 mt-1.5 w-max max-w-xs -translate-x-1/2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-left text-xs leading-snug text-slate-200 opacity-0 shadow-lg ring-1 ring-black/20 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
-                    role="tooltip"
-                    aria-hidden="true"
-                  >
                     {{ row.note }}
                   </span>
                 </span>
@@ -245,5 +283,18 @@ onMounted(() => {
         </button>
       </div>
     </article>
+
+    <Teleport to="body">
+      <span
+        v-if="activeNote"
+        class="pointer-events-none fixed z-50 w-max max-w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-left text-xs leading-snug text-slate-200 opacity-100 shadow-lg ring-1 ring-black/20"
+        :class="{ '-translate-y-full': activeNote.placement === 'above' }"
+        :style="{ left: `${activeNote.left}px`, top: `${activeNote.top}px` }"
+        role="tooltip"
+        aria-hidden="true"
+      >
+        {{ activeNote.text }}
+      </span>
+    </Teleport>
   </section>
 </template>
