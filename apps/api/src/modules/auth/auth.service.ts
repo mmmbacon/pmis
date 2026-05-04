@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import { env } from '../../config/env';
 import { User } from '../users/user.entity';
 import { PublicUser, UsersService } from '../users/users.service';
@@ -34,7 +34,10 @@ export class AuthService {
   async refresh(refreshToken: string): Promise<AuthResponse> {
     const decoded = await this.verifyRefreshToken(refreshToken);
     const user = await this.usersService.findById(decoded.sub);
-    if (!user.refreshTokenHash || !(await bcrypt.compare(refreshToken, user.refreshTokenHash))) {
+    if (
+      !user.refreshTokenHash ||
+      !(await this.matchesRefreshTokenHash(refreshToken, user.refreshTokenHash))
+    ) {
       throw new UnauthorizedException('Refresh token has been revoked');
     }
     const tokens = await this.issueTokens(user);
@@ -60,8 +63,24 @@ export class AuthService {
         expiresIn: env.jwt.refreshExpiresIn,
       },
     );
-    await this.usersService.saveRefreshTokenHash(user.id, await bcrypt.hash(refreshToken, 12));
+    await this.usersService.saveRefreshTokenHash(
+      user.id,
+      await bcrypt.hash(this.refreshTokenDigest(refreshToken), 12),
+    );
     return { accessToken, refreshToken };
+  }
+
+  private async matchesRefreshTokenHash(refreshToken: string, hash: string): Promise<boolean> {
+    if (await bcrypt.compare(this.refreshTokenDigest(refreshToken), hash)) {
+      return true;
+    }
+
+    // Support refresh tokens issued before token digests were stored.
+    return bcrypt.compare(refreshToken, hash);
+  }
+
+  private refreshTokenDigest(refreshToken: string): string {
+    return createHash('sha256').update(refreshToken).digest('hex');
   }
 
   private async verifyRefreshToken(refreshToken: string): Promise<{ sub: string }> {
