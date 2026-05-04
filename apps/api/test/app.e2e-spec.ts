@@ -94,6 +94,49 @@ describe('Timesheet flow (integration)', () => {
       .expect(({ body }) => expect(body[0].totalHours).toBe(8));
   });
 
+  it('rotates refresh tokens and revokes them on logout', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'employee@example.com', password: 'password123' })
+      .expect(201);
+    const firstRefreshToken = login.body.refreshToken as string;
+
+    const refreshed = await request(app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .send({ refreshToken: firstRefreshToken })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body.user.email).toBe('employee@example.com');
+        expect(body.accessToken).toEqual(expect.any(String));
+        expect(body.refreshToken).toEqual(expect.any(String));
+      });
+    const rotatedAccessToken = refreshed.body.accessToken as string;
+    const rotatedRefreshToken = refreshed.body.refreshToken as string;
+    expect(rotatedRefreshToken).not.toBe(firstRefreshToken);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .send({ refreshToken: firstRefreshToken })
+      .expect(401);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/users/me')
+      .set('Authorization', `Bearer ${rotatedAccessToken}`)
+      .expect(200)
+      .expect(({ body }) => expect(body.email).toBe('employee@example.com'));
+
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/logout')
+      .set('Authorization', `Bearer ${rotatedAccessToken}`)
+      .expect(201)
+      .expect(({ body }) => expect(body).toEqual({ ok: true }));
+
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/refresh')
+      .send({ refreshToken: rotatedRefreshToken })
+      .expect(401);
+  });
+
   async function seed(): Promise<void> {
     const roles = dataSource.getRepository(Role);
     const users = dataSource.getRepository(User);
