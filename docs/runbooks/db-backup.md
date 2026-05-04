@@ -15,7 +15,10 @@ Run a daily logical backup with `pg_dump` from a trusted machine or scheduled Fl
 pg_dump "$DATABASE_URL" --format=custom --file="timesheets-$(date +%F).dump"
 ```
 
-Retain daily backups for 7 days and keep one weekly copy off-site. Production seed scripts are not run against production data.
+Retain daily backups for 7 days and keep one weekly copy off-site. Production
+releases run the idempotent seed after migrations so a newly initialized Neon
+database has required baseline records. The seed only inserts missing records and
+must not overwrite existing production data.
 
 ## Restore
 
