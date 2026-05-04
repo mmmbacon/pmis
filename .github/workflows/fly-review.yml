@@ -1,0 +1,77 @@
+name: Deploy Review App
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+permissions:
+  contents: read
+  deployments: write
+
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+  FLY_ORG: ${{ vars.FLY_ORG || 'personal' }}
+  FLY_REGION: ${{ vars.FLY_REGION || 'iad' }}
+  FLY_REVIEW_APP_NAME: pmis-pr-${{ github.event.number }}
+  FLY_REVIEW_POSTGRES_APP: ${{ vars.FLY_REVIEW_POSTGRES_APP }}
+
+jobs:
+  review_app:
+    name: Deploy Fly.io review app
+    runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+    concurrency:
+      group: fly-review-pr-${{ github.event.number }}
+      cancel-in-progress: true
+    environment:
+      name: pr-${{ github.event.number }}
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Validate Fly.io review app configuration
+        if: ${{ github.event.action != 'closed' }}
+        env:
+          FLY_REVIEW_JWT_ACCESS_SECRET: ${{ secrets.FLY_REVIEW_JWT_ACCESS_SECRET }}
+          FLY_REVIEW_JWT_REFRESH_SECRET: ${{ secrets.FLY_REVIEW_JWT_REFRESH_SECRET }}
+        run: |
+          missing=()
+
+          if [ -z "$FLY_API_TOKEN" ]; then
+            missing+=(FLY_API_TOKEN)
+          fi
+
+          if [ -z "$FLY_REVIEW_POSTGRES_APP" ]; then
+            missing+=(FLY_REVIEW_POSTGRES_APP)
+          fi
+
+          if [ -z "$FLY_REVIEW_JWT_ACCESS_SECRET" ]; then
+            missing+=(FLY_REVIEW_JWT_ACCESS_SECRET)
+          fi
+
+          if [ -z "$FLY_REVIEW_JWT_REFRESH_SECRET" ]; then
+            missing+=(FLY_REVIEW_JWT_REFRESH_SECRET)
+          fi
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            printf 'Missing required Fly.io review app configuration: %s\n' "${missing[*]}"
+            exit 1
+          fi
+
+      - name: Deploy PR app to Fly.io
+        id: deploy
+        uses: superfly/fly-pr-review-apps@1.5.0
+        with:
+          name: ${{ env.FLY_REVIEW_APP_NAME }}
+          config: fly.review.toml
+          org: ${{ env.FLY_ORG }}
+          region: ${{ env.FLY_REGION }}
+          postgres: ${{ env.FLY_REVIEW_POSTGRES_APP }}
+          memory: 512
+          secrets: >-
+            JWT_ACCESS_SECRET=${{ secrets.FLY_REVIEW_JWT_ACCESS_SECRET }}
+            JWT_REFRESH_SECRET=${{ secrets.FLY_REVIEW_JWT_REFRESH_SECRET }}
+            WEB_ORIGIN=https://${{ env.FLY_REVIEW_APP_NAME }}.fly.dev
