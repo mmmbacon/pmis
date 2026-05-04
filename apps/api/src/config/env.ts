@@ -18,7 +18,7 @@ const numberValue = (key: string, fallback: number): number => {
   return value ? Number(value) : fallback;
 };
 
-/** Set by Fly Postgres (`fly postgres attach`) and many hosts; overrides discrete DATABASE_* when present. */
+/** Set by hosted Postgres providers such as Neon; overrides discrete DATABASE_* when present. */
 const databaseUrl = process.env.DATABASE_URL?.trim();
 
 const defaultPort = process.env.NODE_ENV === 'production' ? 8080 : 3000;

@@ -65,8 +65,9 @@ The v1 deployment target is Fly.io. The app remains a modular monolith with Post
 
 Pull requests deploy ephemeral Fly.io review apps through `.github/workflows/fly-review.yml`. Configure these GitHub Actions settings before relying on previews:
 
-- Secret `FLY_API_TOKEN`: Fly.io organization token allowed to create apps and attach databases.
-- Variable `FLY_REVIEW_POSTGRES`: existing Fly Postgres cluster used for per-PR review databases.
+- Secret `FLY_API_TOKEN`: Fly.io organization token allowed to create and deploy review apps.
+- Secret `NEON_API_KEY` and variable `NEON_PROJECT_ID`: created by the Neon GitHub integration and used to create/delete per-PR database branches.
+- Optional variables `NEON_DATABASE_ROLE` and `NEON_DATABASE_NAME` override the Neon role and database used for review app connections. They default to `neondb_owner` and `neondb`.
 - Secrets `REVIEW_JWT_ACCESS_SECRET`, `REVIEW_JWT_REFRESH_SECRET`, and `REVIEW_ADMIN_PASSWORD`: runtime credentials for review apps.
 - Optional variables `FLY_ORG`, `FLY_REGION`, and `REVIEW_ADMIN_EMAIL` override the default Fly organization, region, and seeded admin email.
 
