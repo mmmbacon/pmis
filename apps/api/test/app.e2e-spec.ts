@@ -10,6 +10,7 @@ import { Project } from '../src/modules/projects/project.entity';
 import { Task } from '../src/modules/tasks/task.entity';
 import { Role } from '../src/modules/users/role.entity';
 import { User } from '../src/modules/users/user.entity';
+import { seedDatabase } from '../src/seed/seed';
 
 describe('Timesheet flow (integration)', () => {
   let app: INestApplication;
@@ -29,11 +30,45 @@ describe('Timesheet flow (integration)', () => {
     dataSource = app.get(DataSource);
     await dataSource.dropDatabase();
     await dataSource.runMigrations();
-    await seed();
+    await seed(dataSource);
+    await seedDatabase(dataSource);
   });
 
   afterAll(async () => {
     await app.close();
+  });
+
+  it('seeds missing baseline data without overwriting existing records', async () => {
+    const roles = dataSource.getRepository(Role);
+    const users = dataSource.getRepository(User);
+    const projects = dataSource.getRepository(Project);
+    const tasks = dataSource.getRepository(Task);
+
+    await expect(roles.countBy({ name: 'employee' })).resolves.toBe(1);
+    await expect(roles.countBy({ name: 'approver' })).resolves.toBe(1);
+    await expect(roles.countBy({ name: 'admin' })).resolves.toBe(1);
+
+    const employeeRole = await roles.findOneByOrFail({ name: 'employee' });
+    expect(employeeRole.description).toBe('Employee');
+
+    const admin = await users.findOneOrFail({
+      where: { email: 'admin@example.com' },
+      relations: { roles: true },
+    });
+    expect(admin.name).toBe('Existing Admin');
+    await expect(bcrypt.compare('existing-admin-password', admin.passwordHash)).resolves.toBe(true);
+    await expect(bcrypt.compare('password123', admin.passwordHash)).resolves.toBe(false);
+    expect(admin.roles.map((role) => role.name).sort()).toEqual(['admin']);
+
+    const pmis = await projects.findOneByOrFail({ code: 'PMIS' });
+    expect(pmis.name).toBe('PMIS');
+    expect(pmis.description).toBe('Demo');
+    expect(pmis.hourlyRate).toBe('175.00');
+
+    const engTask = await tasks.findOneByOrFail({ projectId: pmis.id, code: 'ENG' });
+    expect(engTask.name).toBe('Existing Engineering');
+    await expect(tasks.countBy({ projectId: pmis.id, code: 'QA' })).resolves.toBe(1);
+    await expect(projects.countBy({ code: 'OPS' })).resolves.toBe(1);
   });
 
   it('lets an employee submit and an approver approve a timesheet with audit and reporting', async () => {
@@ -94,7 +129,7 @@ describe('Timesheet flow (integration)', () => {
       .expect(({ body }) => expect(body[0].totalHours).toBe(8));
   });
 
-  async function seed(): Promise<void> {
+  async function seed(dataSource: DataSource): Promise<void> {
     const roles = dataSource.getRepository(Role);
     const users = dataSource.getRepository(User);
     const projects = dataSource.getRepository(Project);
@@ -105,8 +140,17 @@ describe('Timesheet flow (integration)', () => {
     const approverRole = await roles.save(
       roles.create({ name: 'approver', description: 'Approver' }),
     );
-    await roles.save(roles.create({ name: 'admin', description: 'Admin' }));
+    const adminRole = await roles.save(roles.create({ name: 'admin', description: 'Admin' }));
     const passwordHash = await bcrypt.hash('password123', 4);
+    const adminPasswordHash = await bcrypt.hash('existing-admin-password', 4);
+    await users.save(
+      users.create({
+        email: 'admin@example.com',
+        name: 'Existing Admin',
+        passwordHash: adminPasswordHash,
+        roles: [adminRole],
+      }),
+    );
     await users.save(
       users.create({
         email: 'employee@example.com',
@@ -129,11 +173,11 @@ describe('Timesheet flow (integration)', () => {
         name: 'PMIS',
         description: 'Demo',
         billable: true,
-        hourlyRate: '150.00',
+        hourlyRate: '175.00',
       }),
     );
     task = await tasks.save(
-      tasks.create({ projectId: project.id, code: 'ENG', name: 'Engineering' }),
+      tasks.create({ projectId: project.id, code: 'ENG', name: 'Existing Engineering' }),
     );
   }
 });
