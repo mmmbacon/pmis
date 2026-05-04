@@ -1,0 +1,72 @@
+name: Fly Review App
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+permissions:
+  contents: read
+  deployments: write
+
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+  FLY_ORG: ${{ vars.FLY_ORG || 'personal' }}
+  FLY_REGION: ${{ vars.FLY_REGION || 'iad' }}
+
+jobs:
+  review_app:
+    runs-on: ubuntu-latest
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+    concurrency:
+      group: fly-review-pr-${{ github.event.number }}
+      cancel-in-progress: true
+    environment:
+      name: review-pr-${{ github.event.number }}
+      url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+      - name: Validate Fly review app settings
+        env:
+          EVENT_ACTION: ${{ github.event.action }}
+          FLY_REVIEW_POSTGRES: ${{ vars.FLY_REVIEW_POSTGRES }}
+          REVIEW_ADMIN_PASSWORD: ${{ secrets.REVIEW_ADMIN_PASSWORD }}
+          REVIEW_JWT_ACCESS_SECRET: ${{ secrets.REVIEW_JWT_ACCESS_SECRET }}
+          REVIEW_JWT_REFRESH_SECRET: ${{ secrets.REVIEW_JWT_REFRESH_SECRET }}
+        run: |
+          missing=0
+
+          require() {
+            if [ -z "${!1}" ]; then
+              echo "::error::$2"
+              missing=1
+            fi
+          }
+
+          require FLY_API_TOKEN "Set the FLY_API_TOKEN repository secret to a Fly.io org token."
+
+          if [ "$EVENT_ACTION" != "closed" ]; then
+            require FLY_REVIEW_POSTGRES "Set the FLY_REVIEW_POSTGRES repository variable to an existing Fly Postgres cluster for review apps."
+            require REVIEW_ADMIN_PASSWORD "Set the REVIEW_ADMIN_PASSWORD repository secret for seeded review admin logins."
+            require REVIEW_JWT_ACCESS_SECRET "Set the REVIEW_JWT_ACCESS_SECRET repository secret."
+            require REVIEW_JWT_REFRESH_SECRET "Set the REVIEW_JWT_REFRESH_SECRET repository secret."
+          fi
+
+          exit "$missing"
+
+      - name: Get code
+        uses: actions/checkout@v4
+
+      - name: Deploy PR app to Fly.io
+        id: deploy
+        uses: superfly/fly-pr-review-apps@1.5.0
+        with:
+          name: pmis-pr-${{ github.event.number }}
+          config: fly.review.toml
+          postgres: ${{ vars.FLY_REVIEW_POSTGRES }}
+          memory: 512
+          secrets: >-
+            ADMIN_EMAIL=${{ vars.REVIEW_ADMIN_EMAIL || 'admin@example.com' }}
+            ADMIN_PASSWORD=${{ secrets.REVIEW_ADMIN_PASSWORD }}
+            JWT_ACCESS_SECRET=${{ secrets.REVIEW_JWT_ACCESS_SECRET }}
+            JWT_REFRESH_SECRET=${{ secrets.REVIEW_JWT_REFRESH_SECRET }}
