@@ -61,14 +61,17 @@ The core model has eight tables: `users`, `roles`, `user_roles`, `projects`, `ta
 
 ## Deployment
 
-The v1 deployment target is Fly.io. The app remains a modular monolith with PostgreSQL managed outside the application container. Production migrations run as a discrete deploy step, not on app startup. Backup and restore expectations are documented in [`docs/runbooks/db-backup.md`](docs/runbooks/db-backup.md).
+The v1 application deployment target is Fly.io, with PostgreSQL provided by Neon. The app remains a modular monolith with PostgreSQL managed outside the application container. Production migrations run as a discrete deploy step, not on app startup. Backup and restore expectations are documented in [`docs/runbooks/db-backup.md`](docs/runbooks/db-backup.md).
 
-Pull requests deploy ephemeral Fly.io review apps through `.github/workflows/fly-review.yml`. Configure these GitHub Actions settings before relying on previews:
+Set the production Fly secret `DATABASE_URL` to the Neon pooled connection string for the production database. The API also accepts discrete `DATABASE_*` values, but `DATABASE_URL` takes precedence.
 
-- Secret `FLY_API_TOKEN`: Fly.io organization token allowed to create apps and attach databases.
-- Variable `FLY_REVIEW_POSTGRES`: existing Fly Postgres cluster used for per-PR review databases.
+Pull requests deploy ephemeral Fly.io review apps through `.github/workflows/fly-review.yml`. Each open, reopen, or synchronize event creates or reuses a Neon branch named `review-pr-<number>` and deploys the Fly review app with that branch's pooled connection string. When a pull request closes, the workflow destroys the Fly review app and deletes the matching Neon branch. Configure these GitHub Actions settings before relying on previews:
+
+- Secret `FLY_API_TOKEN`: Fly.io organization token allowed to create and destroy review apps.
+- Secret `NEON_API_KEY`: Neon API key allowed to create and delete branches.
+- Variable `NEON_PROJECT_ID`: Neon project ID used for review branches.
 - Secrets `REVIEW_JWT_ACCESS_SECRET`, `REVIEW_JWT_REFRESH_SECRET`, and `REVIEW_ADMIN_PASSWORD`: runtime credentials for review apps.
-- Optional variables `FLY_ORG`, `FLY_REGION`, and `REVIEW_ADMIN_EMAIL` override the default Fly organization, region, and seeded admin email.
+- Optional variables `FLY_ORG`, `FLY_REGION`, `REVIEW_ADMIN_EMAIL`, `NEON_PARENT_BRANCH`, `NEON_DATABASE`, and `NEON_ROLE` override the default Fly organization, Fly region, seeded admin email, Neon parent branch (`main`), Neon database (`neondb`), and Neon role (`neondb_owner`).
 
 ## ADRs
 
