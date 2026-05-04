@@ -240,7 +240,9 @@ onMounted(() => {
                     data-cy="approval-note-trigger"
                     @blur="hideNote(approvalNoteId(timesheet.id, row.taskId))"
                     @focus="showNote($event, approvalNoteId(timesheet.id, row.taskId), row.note)"
-                    @mouseenter="showNote($event, approvalNoteId(timesheet.id, row.taskId), row.note)"
+                    @mouseenter="
+                      showNote($event, approvalNoteId(timesheet.id, row.taskId), row.note)
+                    "
                     @mouseleave="hideNote(approvalNoteId(timesheet.id, row.taskId))"
                   >
                     <svg
