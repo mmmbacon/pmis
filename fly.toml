@@ -9,6 +9,9 @@ primary_region = 'iad'
 [build]
   dockerfile = 'Dockerfile'
 
+[deploy]
+  release_command = 'node dist/scripts/run-migrations.js && node dist/seed/seed.js'
+
 [http_service]
   internal_port = 8080
   force_https = true

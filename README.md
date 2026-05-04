@@ -63,7 +63,7 @@ The core model has eight tables: `users`, `roles`, `user_roles`, `projects`, `ta
 
 ## Deployment
 
-The v1 deployment target is Fly.io. The app remains a modular monolith with PostgreSQL managed outside the application container. Production migrations run as a discrete deploy step, not on app startup. Backup and restore expectations are documented in [`docs/runbooks/db-backup.md`](docs/runbooks/db-backup.md).
+The v1 deployment target is Fly.io. The app remains a modular monolith with PostgreSQL managed outside the application container. Production releases run pending TypeORM migrations and then the idempotent seed script as a discrete deploy step, not on app startup. The seed script inserts missing baseline roles, demo users, projects, and tasks only; it does not overwrite existing data on subsequent runs. Backup and restore expectations are documented in [`docs/runbooks/db-backup.md`](docs/runbooks/db-backup.md).
 
 Pull requests create ephemeral Neon database branches through `.github/workflows/neon-workflow.yml` and deploy Fly.io review apps through `.github/workflows/fly-review.yml`. Configure these GitHub Actions settings before relying on previews:
 
