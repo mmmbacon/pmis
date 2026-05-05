@@ -72,6 +72,7 @@ Pull requests create ephemeral Neon database branches through `.github/workflows
 - Optional variables `NEON_DATABASE_ROLE` and `NEON_DATABASE_NAME` override the Neon role and database used for review app connections. They default to `neondb_owner` and `neondb`.
 - Secrets `REVIEW_JWT_ACCESS_SECRET`, `REVIEW_JWT_REFRESH_SECRET`, and `REVIEW_ADMIN_PASSWORD`: runtime credentials for review apps.
 - Optional variables `FLY_ORG`, `FLY_REGION`, and `REVIEW_ADMIN_EMAIL` override the default Fly organization, region, and seeded admin email.
+- Optional secret `AUTO_MERGE_TOKEN`: token used by `.github/workflows/auto-merge.yml` to enable auto-merge. Configure it with permission to update workflow files so approved PRs that modify `.github/workflows/*` can be auto-merged.
 
 ## ADRs
 

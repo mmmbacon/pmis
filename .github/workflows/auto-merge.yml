@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Enable GitHub auto-merge
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITHUB_TOKEN cannot merge PRs that modify .github/workflows.
+          # Set AUTO_MERGE_TOKEN with workflow permission for those PRs.
+          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN || github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: gh pr merge "$PR_URL" --auto --squash --delete-branch
