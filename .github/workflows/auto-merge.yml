@@ -16,10 +16,18 @@ jobs:
       github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
     steps:
+      - name: Generate auto-merge app token
+        id: app-token
+        uses: actions/create-github-app-token@v3.1.1
+        with:
+          app-id: ${{ secrets.AUTO_MERGE_APP_ID }}
+          private-key: ${{ secrets.AUTO_MERGE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-workflows: write
+
       - name: Enable GitHub auto-merge
         env:
-          # GITHUB_TOKEN cannot merge PRs that modify .github/workflows.
-          # Set AUTO_MERGE_TOKEN with workflow permission for those PRs.
-          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN || github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: gh pr merge "$PR_URL" --auto --squash --delete-branch
