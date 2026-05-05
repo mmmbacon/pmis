@@ -14,6 +14,7 @@ env:
   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
   FLY_ORG: ${{ vars.FLY_ORG || 'personal' }}
   FLY_REGION: ${{ vars.FLY_REGION || 'iad' }}
+  NEON_BRANCH: preview/pr-${{ github.event.number }}-${{ github.event.pull_request.head.ref }}
 
 jobs:
   review_app:
@@ -61,10 +62,6 @@ jobs:
       - name: Get code
         uses: actions/checkout@v4
 
-      - name: Get branch name
-        id: branch_name
-        uses: tj-actions/branch-names@v8
-
       - name: Get branch expiration date
         if: github.event.action != 'closed'
         run: echo "EXPIRES_AT=$(date -u --date '+14 days' +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
@@ -75,7 +72,7 @@ jobs:
         uses: neondatabase/create-branch-action@v6
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch_name: preview/pr-${{ github.event.number }}-${{ steps.branch_name.outputs.current_branch }}
+          branch_name: ${{ env.NEON_BRANCH }}
           role: ${{ vars.NEON_DATABASE_ROLE || 'neondb_owner' }}
           database: ${{ vars.NEON_DATABASE_NAME || 'neondb' }}
           api_key: ${{ secrets.NEON_API_KEY }}

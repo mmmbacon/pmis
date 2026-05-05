@@ -19,9 +19,11 @@ jobs:
       neon_branch: preview/pr-${{ github.event.number }}-${{ steps.branch_name.outputs.current_branch }}
     runs-on: ubuntu-latest
     steps:
-      - name: Get branch name
+      - name: Resolve pull request branch name
         id: branch_name
-        uses: tj-actions/branch-names@v8
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: echo "current_branch=$HEAD_REF" >> "$GITHUB_OUTPUT"
 
   create_neon_branch:
     name: Create Neon Branch
