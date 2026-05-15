@@ -70,8 +70,8 @@ const ensureProject = async (
   }
 
   for (const taskInput of input.tasks) {
-    const task = await tasks.findOneBy({ projectId: project.id, code: taskInput.code });
-    if (!task) {
+    const existingTask = await tasks.findOneBy({ projectId: project.id, code: taskInput.code });
+    if (!existingTask) {
       await tasks.save(
         tasks.create({ projectId: project.id, code: taskInput.code, name: taskInput.name }),
       );

@@ -1,24 +1,69 @@
 name: Auto Merge Approved PRs
 
 on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review, synchronize]
   pull_request_review:
     types: [submitted]
 
 permissions:
   contents: write
   pull-requests: write
-  workflows: write
 
 jobs:
   enable-auto-merge:
     name: Enable auto-merge
     if: >-
-      github.event.review.state == 'approved' &&
-      github.event.pull_request.base.ref == 'main'
+      github.event.pull_request.base.ref == 'main' &&
+      !github.event.pull_request.draft &&
+      (
+        github.event_name == 'pull_request_target' ||
+        github.event.review.state == 'approved'
+      )
     runs-on: ubuntu-latest
     steps:
+      - name: Check required review decision
+        id: review-state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          review_decision="$(gh pr view "$PR_URL" --json reviewDecision --jq '.reviewDecision // ""')"
+          auto_merge_enabled="$(gh pr view "$PR_URL" --json autoMergeRequest --jq '.autoMergeRequest != null')"
+
+          echo "review_decision=$review_decision" >> "$GITHUB_OUTPUT"
+          echo "auto_merge_enabled=$auto_merge_enabled" >> "$GITHUB_OUTPUT"
+
+          if [ "$review_decision" != "APPROVED" ]; then
+            echo "Auto-merge is waiting for the required PR approvals (current review decision: ${review_decision:-none})."
+            echo "approved=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "$auto_merge_enabled" = "true" ]; then
+            echo "Auto-merge is already enabled for this PR."
+            echo "approved=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "approved=true" >> "$GITHUB_OUTPUT"
+
+      - name: Detect auto-merge app credentials
+        id: auth
+        if: steps.review-state.outputs.approved == 'true'
+        env:
+          AUTO_MERGE_APP_ID: ${{ secrets.AUTO_MERGE_APP_ID }}
+          AUTO_MERGE_APP_PRIVATE_KEY: ${{ secrets.AUTO_MERGE_APP_PRIVATE_KEY }}
+        run: |
+          if [ -n "$AUTO_MERGE_APP_ID" ] && [ -n "$AUTO_MERGE_APP_PRIVATE_KEY" ]; then
+            echo "use_app=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "use_app=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Generate auto-merge app token
         id: app-token
+        if: steps.review-state.outputs.approved == 'true' && steps.auth.outputs.use_app == 'true'
         uses: actions/create-github-app-token@v3.1.1
         with:
           app-id: ${{ secrets.AUTO_MERGE_APP_ID }}
@@ -28,7 +73,8 @@ jobs:
           permission-workflows: write
 
       - name: Enable GitHub auto-merge
+        if: steps.review-state.outputs.approved == 'true'
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: gh pr merge "$PR_URL" --auto --squash --delete-branch

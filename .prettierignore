@@ -4,4 +4,4 @@ coverage
 .pnpm-store
 pnpm-lock.yaml
 .vscode
-AGENTS.md
+*.md
