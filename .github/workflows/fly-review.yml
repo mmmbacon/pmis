@@ -19,6 +19,7 @@ env:
 
 jobs:
   review_app:
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     outputs:
       url: ${{ steps.deploy.outputs.url }}
@@ -32,7 +33,6 @@ jobs:
     steps:
       - name: Validate Fly review app settings
         env:
-          EVENT_ACTION: ${{ github.event.action }}
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
           NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
           REVIEW_ADMIN_PASSWORD: ${{ secrets.REVIEW_ADMIN_PASSWORD }}
@@ -51,12 +51,9 @@ jobs:
           require FLY_API_TOKEN "Set the FLY_API_TOKEN repository secret to a Fly.io org token."
           require NEON_API_KEY "Set the NEON_API_KEY repository secret created by the Neon GitHub integration."
           require NEON_PROJECT_ID "Set the NEON_PROJECT_ID repository variable created by the Neon GitHub integration."
-
-          if [ "$EVENT_ACTION" != "closed" ]; then
-            require REVIEW_ADMIN_PASSWORD "Set the REVIEW_ADMIN_PASSWORD repository secret for seeded review admin logins."
-            require REVIEW_JWT_ACCESS_SECRET "Set the REVIEW_JWT_ACCESS_SECRET repository secret."
-            require REVIEW_JWT_REFRESH_SECRET "Set the REVIEW_JWT_REFRESH_SECRET repository secret."
-          fi
+          require REVIEW_ADMIN_PASSWORD "Set the REVIEW_ADMIN_PASSWORD repository secret for seeded review admin logins."
+          require REVIEW_JWT_ACCESS_SECRET "Set the REVIEW_JWT_ACCESS_SECRET repository secret."
+          require REVIEW_JWT_REFRESH_SECRET "Set the REVIEW_JWT_REFRESH_SECRET repository secret."
 
           exit "$missing"
 
@@ -64,12 +61,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Get branch expiration date
-        if: github.event.action != 'closed'
         run: echo "EXPIRES_AT=$(date -u --date '+14 days' +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
 
       - name: Create Neon branch
         id: create_neon_branch
-        if: github.event.action != 'closed'
         uses: neondatabase/create-branch-action@v6
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
@@ -118,7 +113,7 @@ jobs:
           exit 1
 
       - name: Comment with Fly.io review app URL
-        if: github.event.action != 'closed' && steps.deploy.outputs.url != ''
+        if: steps.deploy.outputs.url != ''
         uses: actions/github-script@v7
         env:
           REVIEW_APP_URL: ${{ steps.deploy.outputs.url }}
@@ -172,3 +167,23 @@ jobs:
               }
               throw error;
             }
+
+  destroy_review_app:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: fly-review-pr-${{ github.event.number }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Validate Fly review app teardown settings
+        run: |
+          if [ -z "$FLY_API_TOKEN" ]; then
+            echo "::error::Set the FLY_API_TOKEN repository secret to a Fly.io org token."
+            exit 1
+          fi
+
+      - name: Destroy PR app on Fly.io
+        uses: superfly/fly-pr-review-apps@1.5.0
+        with:
+          name: pmis-pr-${{ github.event.number }}
