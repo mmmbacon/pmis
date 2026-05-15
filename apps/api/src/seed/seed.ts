@@ -34,14 +34,11 @@ const ensureUser = async (
 ): Promise<User> => {
   const users = manager.getRepository(User);
   const user = await users.findOne({ where: { email: input.email }, relations: { roles: true } });
-  const passwordHash = await bcrypt.hash(input.password, 12);
   if (user) {
-    user.name = input.name;
-    user.passwordHash = passwordHash;
-    user.roles = input.roles;
-    return users.save(user);
+    return user;
   }
 
+  const passwordHash = await bcrypt.hash(input.password, 12);
   return users.save(
     users.create({ email: input.email, name: input.name, passwordHash, roles: input.roles }),
   );
@@ -73,8 +70,8 @@ const ensureProject = async (
   }
 
   for (const taskInput of input.tasks) {
-    const task = await tasks.findOneBy({ projectId: project.id, code: taskInput.code });
-    if (!task) {
+    const existingTask = await tasks.findOneBy({ projectId: project.id, code: taskInput.code });
+    if (!existingTask) {
       await tasks.save(
         tasks.create({ projectId: project.id, code: taskInput.code, name: taskInput.name }),
       );
