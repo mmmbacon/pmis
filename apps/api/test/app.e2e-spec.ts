@@ -172,6 +172,155 @@ describe('Timesheet flow (integration)', () => {
       .expect(401);
   });
 
+  it('lets admins manage agent keys and agents submit time through timesheets', async () => {
+    const adminLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'admin@example.com', password: 'existing-admin-password' })
+      .expect(201);
+    const adminToken = adminLogin.body.accessToken as string;
+
+    const employeeLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'employee@example.com', password: 'password123' })
+      .expect(201);
+    const employeeToken = employeeLogin.body.accessToken as string;
+
+    await request(app.getHttpServer())
+      .get('/api/v1/agents')
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .expect(403);
+
+    const createdAgent = await request(app.getHttpServer())
+      .post('/api/v1/agents')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: 'integration-agent', description: 'Submits integration test time' })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body.name).toBe('integration-agent');
+        expect(body.userId).toEqual(expect.any(String));
+        expect(body.apiKeys).toEqual([]);
+      });
+
+    const issuedKey = await request(app.getHttpServer())
+      .post(`/api/v1/agents/${createdAgent.body.id}/api-keys`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: 'primary' })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body.rawKey).toMatch(/^pmis_agent_[0-9a-f]{16}_[A-Za-z0-9_-]+$/);
+        expect(body.key.keyHash).toBeUndefined();
+        expect(body.key.revokedAt).toBeNull();
+      });
+    const rawKey = issuedKey.body.rawKey as string;
+
+    await request(app.getHttpServer()).get('/api/v1/agent/me').expect(401);
+    await request(app.getHttpServer())
+      .get('/api/v1/agent/me')
+      .set('Authorization', `Bearer ${rawKey}`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.agentId).toBe(createdAgent.body.id);
+        expect(body.userId).toBe(createdAgent.body.userId);
+      });
+
+    await request(app.getHttpServer())
+      .get('/api/v1/agent/tasks')
+      .set('Authorization', `Bearer ${rawKey}`)
+      .expect(200)
+      .expect(({ body }) => expect(body.some((item: Task) => item.id === task.id)).toBe(true));
+
+    await request(app.getHttpServer())
+      .post('/api/v1/agent/time-entries')
+      .set('Authorization', `Bearer ${rawKey}`)
+      .send({
+        taskId: task.id,
+        workDate: '2026-05-15',
+        hours: 1.25,
+        note: 'Implemented agent API',
+      })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body.userId).toBe(createdAgent.body.userId);
+        expect(body.periodStart).toBe('2026-05-11');
+        expect(body.periodEnd).toBe('2026-05-17');
+        expect(body.status).toBe('draft');
+        expect(body.entries).toHaveLength(1);
+        expect(body.entries[0].hours).toBe('1.25');
+      });
+
+    const submitted = await request(app.getHttpServer())
+      .post('/api/v1/agent/time-entries')
+      .set('Authorization', `Bearer ${rawKey}`)
+      .send({
+        taskId: task.id,
+        workDate: '2026-05-15',
+        hours: 0.75,
+        note: 'Submitted the week',
+        submitWeek: true,
+      })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body.status).toBe('submitted');
+        expect(body.entries).toHaveLength(1);
+        expect(body.entries[0].hours).toBe('2.00');
+        expect(body.entries[0].note).toContain('Implemented agent API');
+        expect(body.entries[0].note).toContain('Submitted the week');
+      });
+
+    await request(app.getHttpServer())
+      .get('/api/v1/reporting/projects')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200)
+      .expect(({ body }) => {
+        const summary = body.find((item: { projectCode: string }) => item.projectCode === 'PMIS');
+        expect(summary.totalHours).toBeGreaterThanOrEqual(2);
+      });
+
+    await request(app.getHttpServer())
+      .post('/api/v1/agent/time-entries')
+      .set('Authorization', `Bearer ${rawKey}`)
+      .send({ taskId: task.id, workDate: '2026-05-15', hours: 1 })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/agents/${createdAgent.body.id}/api-keys/${issuedKey.body.key.id}/revoke`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(201)
+      .expect(({ body }) => expect(body.revokedAt).toEqual(expect.any(String)));
+
+    await request(app.getHttpServer())
+      .get('/api/v1/agent/me')
+      .set('Authorization', `Bearer ${rawKey}`)
+      .expect(401);
+
+    const replacementKey = await request(app.getHttpServer())
+      .post(`/api/v1/agents/${createdAgent.body.id}/api-keys`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: 'replacement' })
+      .expect(201);
+    await request(app.getHttpServer())
+      .patch(`/api/v1/agents/${createdAgent.body.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ disabled: true })
+      .expect(200)
+      .expect(({ body }) => expect(body.disabledAt).toEqual(expect.any(String)));
+
+    await request(app.getHttpServer())
+      .get('/api/v1/agent/me')
+      .set('Authorization', `Bearer ${replacementKey.body.rawKey}`)
+      .expect(401);
+
+    await request(app.getHttpServer())
+      .get(`/api/v1/audit/timesheet/${submitted.body.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.map((event: { action: string }) => event.action)).toEqual(
+          expect.arrayContaining(['timesheet.agent_time_logged', 'timesheet.submitted']),
+        );
+      });
+  });
+
   async function seed(dataSource: DataSource): Promise<void> {
     const roles = dataSource.getRepository(Role);
     const users = dataSource.getRepository(User);

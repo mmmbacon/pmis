@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppDataSource } from './config/data-source';
 import { env } from './config/env';
+import { AgentsModule } from './modules/agents/agents.module';
 import { ApprovalsModule } from './modules/approvals/approvals.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -34,6 +35,7 @@ const serveWebClient = existsSync(join(clientDir, 'index.html'));
     }),
     AuthModule,
     UsersModule,
+    AgentsModule,
     ProjectsModule,
     TasksModule,
     TimesheetsModule,

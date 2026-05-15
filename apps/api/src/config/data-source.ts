@@ -1,5 +1,7 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
+import { AgentApiKey } from '../modules/agents/agent-api-key.entity';
+import { Agent } from '../modules/agents/agent.entity';
 import { AuditEvent } from '../modules/audit/audit-event.entity';
 import { Project } from '../modules/projects/project.entity';
 import { Task } from '../modules/tasks/task.entity';
@@ -22,7 +24,7 @@ export const AppDataSource = new DataSource({
       }),
   synchronize: false,
   logging: env.nodeEnv === 'development' ? ['error', 'warn'] : ['error'],
-  entities: [AuditEvent, Project, Task, TimesheetEntry, Timesheet, Role, User],
+  entities: [Agent, AgentApiKey, AuditEvent, Project, Task, TimesheetEntry, Timesheet, Role, User],
   migrations: [`${__dirname}/../migrations/*{.ts,.js}`],
   extra: {
     max: 10,

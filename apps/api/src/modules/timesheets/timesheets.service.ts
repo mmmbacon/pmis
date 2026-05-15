@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import { AuthenticatedUser, hasRole } from '../../common/authenticated-user';
 import { AuditService } from '../audit/audit.service';
+import type { AgentTimeEntryDto } from '../agents/dto/agent-time-entry.dto';
 import { Task } from '../tasks/task.entity';
 import { UpsertTimesheetDto } from './dto/upsert-timesheet.dto';
 import { TimesheetEntry } from './timesheet-entry.entity';
@@ -114,6 +115,111 @@ export class TimesheetsService {
         manager,
       );
       return detailed;
+    });
+  }
+
+  async logAgentTime(userId: string, dto: AgentTimeEntryDto): Promise<Timesheet> {
+    const { periodStart, periodEnd } = this.weekForDate(dto.workDate);
+    const mode = dto.mode ?? 'append';
+
+    return this.dataSource.transaction(async (manager) => {
+      const taskExists = await manager.getRepository(Task).existsBy({ id: dto.taskId });
+      if (!taskExists) {
+        throw new BadRequestException('Task does not exist');
+      }
+
+      const timesheets = manager.getRepository(Timesheet);
+      const entries = manager.getRepository(TimesheetEntry);
+      let timesheet = await timesheets.findOne({
+        where: { userId, periodStart },
+        relations: { entries: true },
+      });
+      const before = timesheet ? this.snapshot(timesheet) : null;
+      if (!timesheet) {
+        timesheet = timesheets.create({
+          userId,
+          periodStart,
+          periodEnd,
+          status: TimesheetStatus.Draft,
+        });
+      }
+      if (!isEditableStatus(timesheet.status)) {
+        throw new BadRequestException('Only draft or rejected timesheets can be edited');
+      }
+
+      timesheet.periodEnd = periodEnd;
+      timesheet.status = TimesheetStatus.Draft;
+      timesheet.submittedAt = null;
+      timesheet.decidedAt = null;
+      timesheet.decidedBy = null;
+      timesheet.decisionNote = null;
+      const saved = await timesheets.save(timesheet);
+
+      let entry = await entries.findOneBy({
+        timesheetId: saved.id,
+        taskId: dto.taskId,
+        workDate: dto.workDate,
+      });
+      if (!entry) {
+        entry = entries.create({
+          timesheetId: saved.id,
+          taskId: dto.taskId,
+          workDate: dto.workDate,
+        });
+      }
+
+      if (mode === 'append' && entry.id) {
+        const hours = Number((Number(entry.hours) + dto.hours).toFixed(2));
+        if (hours > 24) {
+          throw new BadRequestException('Entry hours cannot exceed 24 hours in a day');
+        }
+        entry.hours = hours.toFixed(2);
+        entry.note = this.appendNote(entry.note, dto.note);
+      } else {
+        entry.hours = dto.hours.toFixed(2);
+        entry.note = dto.note ?? null;
+      }
+      await entries.save(entry);
+
+      const logged = await this.findDetailed(saved.id, manager);
+      await this.auditService.record(
+        {
+          actorId: userId,
+          entityType: 'timesheet',
+          entityId: saved.id,
+          action: before ? 'timesheet.agent_time_logged' : 'timesheet.created',
+          before,
+          after: this.snapshot(logged),
+        },
+        manager,
+      );
+
+      if (!dto.submitWeek) {
+        return logged;
+      }
+
+      const beforeSubmit = this.snapshot(logged);
+      assertCanSubmit(logged.status, logged.entries.length);
+      await timesheets.update(logged.id, {
+        status: TimesheetStatus.Submitted,
+        submittedAt: new Date(),
+        decidedAt: null,
+        decidedBy: null,
+        decisionNote: null,
+      });
+      const submitted = await this.findDetailed(logged.id, manager);
+      await this.auditService.record(
+        {
+          actorId: userId,
+          entityType: 'timesheet',
+          entityId: logged.id,
+          action: 'timesheet.submitted',
+          before: beforeSubmit,
+          after: this.snapshot(submitted),
+        },
+        manager,
+      );
+      return submitted;
     });
   }
 
@@ -239,6 +345,33 @@ export class TimesheetsService {
         throw new BadRequestException('Entry work dates must fall inside the timesheet period');
       }
     }
+  }
+
+  private weekForDate(workDate: string): { periodStart: string; periodEnd: string } {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(workDate)) {
+      throw new BadRequestException('Work date must be a YYYY-MM-DD date');
+    }
+    const date = new Date(`${workDate}T00:00:00Z`);
+    if (Number.isNaN(date.valueOf())) {
+      throw new BadRequestException('Invalid work date');
+    }
+    const day = date.getUTCDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    const monday = new Date(date);
+    monday.setUTCDate(date.getUTCDate() + mondayOffset);
+    const sunday = new Date(monday);
+    sunday.setUTCDate(monday.getUTCDate() + 6);
+    return {
+      periodStart: monday.toISOString().slice(0, 10),
+      periodEnd: sunday.toISOString().slice(0, 10),
+    };
+  }
+
+  private appendNote(current: string | null, next?: string): string | null {
+    if (!next) {
+      return current;
+    }
+    return current ? `${current}\n${next}` : next;
   }
 
   private snapshot(timesheet: Timesheet): Record<string, unknown> {
