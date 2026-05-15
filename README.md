@@ -87,3 +87,4 @@ Pull requests create ephemeral Neon database branches through `.github/workflows
 - [`0006-layered-testing-strategy`](docs/adr/0006-layered-testing-strategy.md)
 - [`0007-period-locking-in-domain-service`](docs/adr/0007-period-locking-in-domain-service.md)
 - [`0008-uuid-primary-keys`](docs/adr/0008-uuid-primary-keys.md)
+- [`0009-agent-api-key-time-submission`](docs/adr/0009-agent-api-key-time-submission.md)
