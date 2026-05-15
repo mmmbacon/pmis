@@ -6,10 +6,10 @@
 
 Timesheet Manager is a pnpm workspace monorepo with two apps:
 
-| App | Path | Port | Framework |
-|-----|------|------|-----------|
+| App | Path       | Port | Framework        |
+| --- | ---------- | ---- | ---------------- |
 | API | `apps/api` | 3000 | NestJS + TypeORM |
-| Web | `apps/web` | 5173 | Vue 3 + Vite |
+| Web | `apps/web` | 5173 | Vue 3 + Vite     |
 
 PostgreSQL 16 runs in Docker on host port **5433** (not the default 5432).
 
@@ -36,11 +36,11 @@ The environment uses `fuse-overlayfs` storage driver and `iptables-legacy`.
 
 ### Seeded demo accounts
 
-| Role | Email | Password |
-|------|-------|----------|
+| Role     | Email                | Password    |
+| -------- | -------------------- | ----------- |
 | Employee | employee@example.com | password123 |
 | Approver | approver@example.com | password123 |
-| Admin | admin@example.com | password123 |
+| Admin    | admin@example.com    | password123 |
 
 ### Testing
 
