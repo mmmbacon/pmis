@@ -34,11 +34,14 @@ const ensureUser = async (
 ): Promise<User> => {
   const users = manager.getRepository(User);
   const user = await users.findOne({ where: { email: input.email }, relations: { roles: true } });
+  const passwordHash = await bcrypt.hash(input.password, 12);
   if (user) {
-    return user;
+    user.name = input.name;
+    user.passwordHash = passwordHash;
+    user.roles = input.roles;
+    return users.save(user);
   }
 
-  const passwordHash = await bcrypt.hash(input.password, 12);
   return users.save(
     users.create({ email: input.email, name: input.name, passwordHash, roles: input.roles }),
   );
