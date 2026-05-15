@@ -4,11 +4,11 @@
 
 ## Status
 
-*Proposed | Accepted | Superseded | Deprecated — by [link to newer ADR if applicable]*
+_Proposed | Accepted | Superseded | Deprecated — by [link to newer ADR if applicable]_
 
 ## Context
 
-Describe the forces at play: requirements, constraints, prior decisions, deadlines, scaling or security posture, etc. Enough detail so someone joining later understands *why* a decision existed.
+Describe the forces at play: requirements, constraints, prior decisions, deadlines, scaling or security posture, etc. Enough detail so someone joining later understands _why_ a decision existed.
 
 ## Decision
 
@@ -18,8 +18,8 @@ State the architectural choice plainly. Prefer one clear approach. Mention concr
 
 Brief bullets for serious options that were ruled out:
 
-- **Option A**: one-line summary — *Rejected because …*
-- **Option B**: one-line summary — *Rejected because …*
+- **Option A**: one-line summary — _Rejected because …_
+- **Option B**: one-line summary — _Rejected because …_
 
 Delete this section if there were no meaningful alternatives.
 

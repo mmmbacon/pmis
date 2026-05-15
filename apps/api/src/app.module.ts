@@ -24,7 +24,7 @@ const serveWebClient = existsSync(join(clientDir, 'index.html'));
       ? [
           ServeStaticModule.forRoot({
             rootPath: clientDir,
-            exclude: ['/api/(.*)'],
+            exclude: ['/api/{*any}'],
           }),
         ]
       : []),
