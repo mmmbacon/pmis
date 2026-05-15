@@ -77,3 +77,45 @@ export interface ProjectSummary {
   hourlyRate: number;
   billableAmount: number;
 }
+
+export interface AgentApiKeySummary {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  lastUsedAt: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Agent {
+  id: string;
+  name: string;
+  description: string | null;
+  userId: string;
+  createdBy: string | null;
+  disabledAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  apiKeys: AgentApiKeySummary[];
+}
+
+export interface CreateAgentInput {
+  name: string;
+  description?: string | undefined;
+}
+
+export interface UpdateAgentInput {
+  name?: string;
+  description?: string | null;
+  disabled?: boolean;
+}
+
+export interface CreateAgentApiKeyInput {
+  name: string;
+}
+
+export interface CreateAgentApiKeyResponse {
+  key: AgentApiKeySummary;
+  rawKey: string;
+}

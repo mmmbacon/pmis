@@ -1,10 +1,14 @@
 import type {
+  Agent,
   AuthResponse,
+  CreateAgentApiKeyResponse,
+  CreateAgentInput,
   Project,
   ProjectSummary,
   Task,
   Timesheet,
   TimesheetInput,
+  UpdateAgentInput,
   User,
 } from '../types/api';
 
@@ -103,4 +107,21 @@ export const approvalsApi = {
 
 export const reportingApi = {
   projectSummary: (): Promise<ProjectSummary[]> => request<ProjectSummary[]>('/reporting/projects'),
+};
+
+export const agentsApi = {
+  list: (): Promise<Agent[]> => request<Agent[]>('/agents'),
+  create: (input: CreateAgentInput): Promise<Agent> =>
+    request<Agent>('/agents', { method: 'POST', body: JSON.stringify(input) }),
+  update: (id: string, input: UpdateAgentInput): Promise<Agent> =>
+    request<Agent>(`/agents/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
+  createApiKey: (agentId: string, name: string): Promise<CreateAgentApiKeyResponse> =>
+    request<CreateAgentApiKeyResponse>(`/agents/${agentId}/api-keys`, {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    }),
+  revokeApiKey: (agentId: string, keyId: string): Promise<Agent['apiKeys'][number]> =>
+    request<Agent['apiKeys'][number]>(`/agents/${agentId}/api-keys/${keyId}/revoke`, {
+      method: 'POST',
+    }),
 };
